@@ -1,4 +1,5 @@
-import { useState, type ReactNode } from 'react'
+import { useParams } from 'common'
+import { useMemo, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
 import {
   Button,
@@ -15,10 +16,16 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
 } from 'ui'
+import { CodeBlock } from 'ui-patterns/CodeBlock'
 import { Input } from 'ui-patterns/DataInputs/Input'
 
 import {
+  getWorkerRuntime,
   UNIT_NAME_LOWER,
   WORKER_ACCESS_MODES,
   WORKER_INSTANCE_LIMITS,
@@ -57,11 +64,34 @@ export const CreateWorkerDialog = ({
   onClose: () => void
   onCreated?: (worker: Worker) => void
 }) => {
+  const { ref: projectRef } = useParams()
   const [name, setName] = useState(() => generateWorkerName())
   const [runtime, setRuntime] = useState<WorkerRuntimeId>('node')
   const [size, setSize] = useState<WorkerSizeId>('2x1')
   const [access, setAccess] = useState<WorkerAccessMode>('public')
   const [instances, setInstances] = useState(WORKER_INSTANCE_LIMITS.default)
+
+  // Snippets stay in sync with the form so a user can either click Create or
+  // copy the exact equivalent to run themselves.
+  const { cli, curl } = useMemo(() => {
+    const runtimeValue = getWorkerRuntime(runtime).cliValue
+    const workerName = name || 'my-worker'
+    return {
+      cli: [
+        `supabase workers deploy ${workerName} \\`,
+        `  --runtime ${runtimeValue} \\`,
+        `  --size ${size} \\`,
+        `  --access ${access} \\`,
+        `  --instances ${instances}`,
+      ].join('\n'),
+      curl: [
+        `curl -X POST 'https://api.supabase.com/v1/projects/${projectRef ?? '<project-ref>'}/workers' \\`,
+        `  -H 'Authorization: Bearer $SUPABASE_ACCESS_TOKEN' \\`,
+        `  -H 'Content-Type: application/json' \\`,
+        `  -d '${JSON.stringify({ name: workerName, runtime: runtimeValue, size, access, instances })}'`,
+      ].join('\n'),
+    }
+  }, [name, runtime, size, access, instances, projectRef])
 
   const handleCreate = () => {
     const worker = workersMockState.createWorker({ name, runtime, size, access, instances })
@@ -157,6 +187,26 @@ export const CreateWorkerDialog = ({
                 }}
               />
             </Field>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <p className="text-sm text-foreground-light">Or run it yourself</p>
+            <Tabs defaultValue="cli">
+              <TabsList>
+                <TabsTrigger value="cli">CLI</TabsTrigger>
+                <TabsTrigger value="curl">curl</TabsTrigger>
+              </TabsList>
+              <TabsContent value="cli" className="mt-2">
+                <CodeBlock language="bash" hideLineNumbers className="text-xs">
+                  {cli}
+                </CodeBlock>
+              </TabsContent>
+              <TabsContent value="curl" className="mt-2">
+                <CodeBlock language="bash" hideLineNumbers className="text-xs">
+                  {curl}
+                </CodeBlock>
+              </TabsContent>
+            </Tabs>
           </div>
         </DialogSection>
 

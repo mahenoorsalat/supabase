@@ -3,7 +3,6 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, type PropsWithChildren } from 'react'
 import {
-  Badge,
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
@@ -11,6 +10,9 @@ import {
   BreadcrumbSeparator,
   NavMenu,
   NavMenuItem,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
 } from 'ui'
 import { Admonition } from 'ui-patterns/admonition'
 import { PageBreadcrumbs, PageBreadcrumbsActions } from 'ui-patterns/PageBreadcrumbs'
@@ -140,13 +142,16 @@ const WorkerDetailsLayout = ({ title, children }: PropsWithChildren<WorkerDetail
               {navigationItems.map((item) => {
                 if (item.disabled) {
                   return (
-                    <NavMenuItem key={item.label} className="pointer-events-none opacity-60">
-                      <span className="flex items-center gap-2">
-                        {item.label}
-                        <Badge variant="default" className="px-1.5 py-0 text-[10px] leading-4">
-                          Coming soon
-                        </Badge>
-                      </span>
+                    <NavMenuItem key={item.label} className="opacity-60">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="cursor-not-allowed">{item.label}</span>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="max-w-56 text-center">
+                          Coming soon — worker instances are stateless at alpha (no persistent
+                          disks)
+                        </TooltipContent>
+                      </Tooltip>
                     </NavMenuItem>
                   )
                 }
