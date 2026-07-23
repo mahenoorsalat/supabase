@@ -437,26 +437,41 @@ const getContent = async (params: Params) => {
     isExternal = true
     let remoteFile: string
     ;({ remoteFile, meta } = federatedPage)
+    editLink = `${org}/${repo}/blob/main/${docsDir}/${remoteFile}`
+    content = ''
 
-    const tag = await getLatestDocsTag()
+    try {
+      const tag = await getLatestDocsTag()
 
-    if (!tag) {
-      throw new Error('No latest docs tag found for federated wrappers pages')
+      if (!tag) {
+        throw new Error('No latest docs tag found for federated wrappers pages')
+      }
+
+      editLink = `${org}/${repo}/blob/${tag}/${docsDir}/${remoteFile}`
+
+      const rawContent = await getGitHubFileContents({
+        org,
+        repo,
+        path: `${docsDir}/${remoteFile}`,
+        branch: tag,
+      })
+
+      assetsBaseUrl = `https://raw.githubusercontent.com/${org}/${repo}/${tag}/docs/assets/`
+
+      const { content: contentWithoutFrontmatter } = matter(rawContent)
+      content = removeRedundantH1(contentWithoutFrontmatter)
+    } catch (error) {
+      if (!process.env.DOCS_GITHUB_APP_PRIVATE_KEY) {
+        console.warn(
+          `[wrappers] Skipping federated content fetch for ${remoteFile}: DOCS_GITHUB_APP_PRIVATE_KEY is not set`
+        )
+      } else {
+        console.error(
+          `[wrappers] Failed to fetch federated content for ${remoteFile} from GitHub`,
+          error
+        )
+      }
     }
-
-    editLink = `${org}/${repo}/blob/${tag}/${docsDir}/${remoteFile}`
-
-    let rawContent = await getGitHubFileContents({
-      org,
-      repo,
-      path: `${docsDir}/${remoteFile}`,
-      branch: tag,
-    })
-
-    assetsBaseUrl = `https://raw.githubusercontent.com/${org}/${repo}/${tag}/docs/assets/`
-
-    const { content: contentWithoutFrontmatter } = matter(rawContent)
-    content = removeRedundantH1(contentWithoutFrontmatter)
   }
 
   return {
