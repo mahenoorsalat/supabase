@@ -77,6 +77,12 @@
         "type": "operation"
       },
       {
+        "id": "v1-scrape-project-metrics",
+        "title": "Scrape project metrics",
+        "slug": "v1-scrape-project-metrics",
+        "type": "operation"
+      },
+      {
         "id": "v2-update-log-drain",
         "title": "Update log drain",
         "slug": "v2-update-log-drain",
